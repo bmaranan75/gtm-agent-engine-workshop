@@ -13,6 +13,9 @@ cluster the failures → **Build** the fix as a PR → **Test** it against a dat
 
 ```
 .
+├── .github/
+│   └── workflows/
+│       └── eval.yml           # PR eval: runs eval.py on main vs. the PR branch and comments the results
 ├── gtm_agent/
 │   ├── gtm_agent.py           # The agent graph and run_agent entrypoint
 │   ├── data_service.py        # Data access layer
@@ -209,6 +212,18 @@ git checkout main
 **5. Compare.** Open both experiments side by side in LangSmith. Same dataset, same evaluator,
 measurably different `assertions_passed`, and you have that evidence while the fix is still a
 proposal on a branch.
+
+**6. Or let CI do steps 3–5 for you.** `.github/workflows/eval.yml` runs the same before/after
+automatically on every PR that touches `gtm_agent/**`: it checks out the PR's base commit and its
+head commit, runs `eval.py` on each (as `pr-<number>-main` and `pr-<number>-fix`, via
+`EXPERIMENT_PREFIX`), and posts a comment on the PR with both experiment names to open in the
+Compare view.
+
+It runs on **your fork's** secrets in GitHub, not the upstream repo's, so add these under
+**Settings → Secrets and variables → Actions**: `LANGSMITH_API_KEY`, `OPENAI_API_KEY` (or whatever
+your model routing needs), and `DATASET_NAME` — plus `LANGSMITH_WORKSPACE_ID`, `LANGSMITH_ENDPOINT`,
+and `LANGSMITH_PROJECT` if your setup needs them. If one of the three required secrets is missing,
+the workflow comments which one and fails fast, so you can add it and hit **Re-run failed jobs**.
 
 ## Deploy — ship it
 
