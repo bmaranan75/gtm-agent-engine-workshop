@@ -225,6 +225,15 @@ your model routing needs), and `DATASET_NAME` — plus `LANGSMITH_WORKSPACE_ID`,
 and `LANGSMITH_PROJECT` if your setup needs them. If one of the three required secrets is missing,
 the workflow comments which one and fails fast, so you can add it and hit **Re-run failed jobs**.
 
+A pull request is the only trigger — there's no "Run workflow" button. If opening the PR produces no
+run at all, check, in order:
+
+1. **Actions enabled on your fork?** GitHub disables them on new forks. Open the **Actions** tab and
+   click *"I understand my workflows, go ahead and enable them"*, then reopen the PR.
+2. **Is the PR against your fork?** `gh pr create` defaults to upstream, whose runs can't see your
+   fork's secrets. Base and head must both be your fork.
+3. **Does the diff touch `gtm_agent/**`?** The `paths:` filter skips everything else silently.
+
 ## Deploy — ship it
 
 All the risk was retired in Test, so this is short:
