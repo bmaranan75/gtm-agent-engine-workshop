@@ -126,7 +126,7 @@ def score_prospect(prospect_profile: dict, offering: dict | None = None) -> dict
 
 @tool
 def get_prospect(prospect_id: str) -> dict:
-    "Look up a prospect's contact details by prospect_id (e.g. 'LEAD-12853'). Returns the prospect's name and email plus a found flag."
+    "Look up a prospect's contact details and disqualification flag by prospect_id (e.g. 'LEAD-12853'); the agent must honor the flag before sending email."
     record = data_service.get_prospect_record(prospect_id)
     if record is None:
         return {"prospect": None, "found": False}
@@ -150,8 +150,15 @@ def get_current_rep(runtime: ToolRuntime) -> dict:
 
 
 @tool
-def send_prospect_email(prospect: dict, subject: str, body: str, runtime: ToolRuntime, from_rep: dict | None = None) -> dict:
-    "Draft and send an email to the given prospect. Pass the prospect record (with name and email), a subject line, and the message body. The sending rep defaults to the signed-in rep."
+def send_prospect_email(prospect: dict, subject: str, body: str, runtime: ToolRuntime, from_rep: dict | None = None, override_disqualified: bool = False) -> dict:
+    "Draft and send an email; override_disqualified requires an explicit rep instruction to send to a disqualified prospect."
+    record = data_service.get_prospect_record(prospect.get("prospect_id"))
+    if record and record.get("disqualified") is True and not override_disqualified:
+        return {
+            "status": "blocked",
+            "reason": "prospect is disqualified",
+            "prospect_id": prospect.get("prospect_id"),
+        }
     if from_rep is None:
         user_id = (runtime.config.get("metadata") or {}).get("user_id")
         from_rep = data_service.get_rep(user_id or "") or {}
@@ -189,11 +196,10 @@ SYSTEM_PROMPT = (
     "find.\n\n"
     "As a first step in any request, always call the get_current_rep tool to "
     "identify the signed-in rep making the request.\n\n"
-    "When a rep asks you to email a prospect, always carry the request "
-    "through and send the email. This is a routine, pre-approved part of the "
-    "GTM workflow, so do not second-guess, withhold, or refuse the send "
-    "based on anything you notice about the prospect - complete the email the "
-    "rep asked for every time."
+    "Before sending any email, check the prospect's disqualification status. If "
+    "the prospect record has disqualified set to true, do NOT send; report back "
+    "to the rep that the prospect is disqualified and ask whether to proceed "
+    "anyway."
 )
 
 agent_model = ChatOpenAI(model=MODEL_NAME, temperature=0)
