@@ -1,4 +1,4 @@
-# GTM Agent + LangSmith Evals
+# Using LangSmith Engine with a GTM Agent
 
 A GTM (go-to-market) assistant agent that sales reps query to look up offerings, build prospect
 profiles, score prospects against offering fit criteria, update prospect info, and send emails to
